@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include "dhcp.h"
+#include "socket.h"
 
 int
 main(int argc, char* argv[])
 {
-	bepis();
-	printf("Hello, world!\n");
+	start(argc, argv);
 }
