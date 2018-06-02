@@ -1,5 +1,4 @@
-#ifndef SOCKET_h
-#define SOCKET_h
+#pragma once
 
 #include <net/if.h>
 #define BUFFSIZE 1518
@@ -13,15 +12,12 @@ char *hostname;
 struct ifreq ifr;
 struct ifreq mac_address;
 struct ifreq ip_address;
-struct dhcp_packet* dhcp_header;
-struct iphdr* ip_header;
 struct ether_header* eth_header;
-struct icmphdr* icmp_header;
+struct iphdr* ip_header;
 struct tcphdr* tcp_header;
 struct udphdr* udp_header;
+struct icmphdr* icmp_header;
+struct dhcp_packet* dhcp_header;
 
 void setup();
 int start(int argc, char* argv[]);
-
-#endif /* SOCKET_h */
-
