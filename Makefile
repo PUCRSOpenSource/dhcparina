@@ -10,7 +10,7 @@ _DEPS = dhcp.h socket.h
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = main.o dhcp.o socket.o
+_OBJ = main.o socket.o
 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
