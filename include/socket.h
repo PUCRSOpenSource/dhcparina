@@ -19,5 +19,5 @@ struct udphdr* udp_header;
 struct icmphdr* icmp_header;
 struct dhcp_packet* dhcp_header;
 
-void setup();
+void setup(void);
 int start(int argc, char* argv[]);

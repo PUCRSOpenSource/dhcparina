@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/udp.h>
+#include <linux/tcp.h>
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <string.h>
@@ -9,10 +10,47 @@
 #include <unistd.h>
 #include "socket.h"
 
-void
-setup()
+static void
+process_ip(void)
 {
-	if((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
+	unsigned int ip_protocol = (unsigned int) ip_header->protocol;
+
+	if (ip_protocol == 0x11)
+	{
+		printf("( ͡° ͜ʖ ͡°) It's UDP!!\n");
+		/*udp_handler();*/
+	}
+	else
+	{
+		if (ip_header->protocol == 6 && (ntohs(tcp_header->dest) == 80 || ntohs(tcp_header->dest) == 8080))
+		{
+			printf("( ͡° ͜ʖ ͡°) It's HTTP, duck yissss!!\n");
+			/*char* http_header_start = (char*) (buffer + (sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct tcphdr)));*/
+			/*parse_host_from_http(http_header_start);*/
+		}
+	}
+}
+
+static void
+sniffer(void)
+{
+	while (1)
+	{
+		recv(sockd, (char *) &buffer, sizeof(buffer), 0x0);
+
+		u_int16_t ether_type = ntohs(eth_header->ether_type);
+		if (ether_type == 0x0800)
+		{
+			printf("┬┴┬┴┤ ͜ʖ ͡°) Got a sassy IP packet\n");
+			process_ip();
+		}
+	}
+}
+
+void
+setup(void)
+{
+	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
 	{
 		printf("Socket could not be created.\n");
 		exit(1);
@@ -20,7 +58,7 @@ setup()
 
 	strcpy(ifr.ifr_name, IF_NAME);
 
-	if(ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
+	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
 	{
 		printf("Error in ioctl!\n");
 		exit(1);
@@ -54,7 +92,7 @@ int
 start(int argc, char* argv[])
 {
 
-	if(argc <= 1)
+	if (argc <= 1)
 	{
 		printf("Format:           \n");
 		printf("  ./main interface\n");
@@ -63,6 +101,8 @@ start(int argc, char* argv[])
 	IF_NAME = argv[1];
 
 	setup();
+	sniffer();
+
 
 	return 0;
 }
