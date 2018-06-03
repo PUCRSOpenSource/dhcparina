@@ -1,5 +1,7 @@
 # dhcparina
 
+[![CircleCI](https://circleci.com/gh/execb5/dhcparina/tree/master.svg?style=svg&circle-token=61a380f3556596c26b16724985650eb795f0dff4)](https://circleci.com/gh/execb5/dhcparina/tree/master)
+
 ## Objetivo
 
 Implementar um programa que envia mensagens **DHCP** para os clientes
