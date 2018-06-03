@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: library/gcc:8
+    steps:
+      - checkout
+      - run:
+          name: Compile
+          command: make
+
