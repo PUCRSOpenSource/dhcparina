@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "dhcp.h"
-#include "socket.h"
+#include "sniffer.h"
 
 int
 main(int argc, char* argv[])

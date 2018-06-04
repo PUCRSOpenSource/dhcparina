@@ -1,6 +1,8 @@
 #pragma once
 
 #include <net/if.h>
+#include "dhcp.h"
+
 #define BUFFSIZE 1518
 
 unsigned char buffer[BUFFSIZE];
