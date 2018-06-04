@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "dhcp.h"
 #include "sniffer.h"
 
 int
