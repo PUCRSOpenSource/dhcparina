@@ -7,10 +7,10 @@
 
 unsigned char buffer[BUFFSIZE];
 char* IF_NAME;
-char *ip_str;
+char* ip_str;
 int ip_int;
 int sockd;
-char *hostname;
+char* hostname;
 struct ifreq ifr;
 struct ifreq mac_address;
 struct ifreq ip_address;

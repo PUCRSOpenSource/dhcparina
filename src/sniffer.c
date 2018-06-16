@@ -20,8 +20,9 @@ process_dhcp(void)
 	{
 		unsigned char type = options[i++];
 		if (type == 255)
+		{
 			break;
-		unsigned char len = options[i++];
+		}
 		if (type == 53)
 		{
 			if (options[i] == 1)
@@ -36,6 +37,7 @@ process_dhcp(void)
 				}
 			}
 		}
+		unsigned char len = options[i++];
 		if (type == 12)
 		{
 			hostname = malloc(len + 1);
@@ -51,7 +53,9 @@ process_udp(void)
 {
 	unsigned int port_dest = (unsigned int) ntohs(udp_header->dest);
 	if (port_dest == 67)
+	{
 		process_dhcp();
+	}
 }
 
 static void
@@ -61,7 +65,7 @@ process_ip(void)
 
 	if (ip_protocol == 0x11)
 	{
-		printf("( ͡° ͜ʖ ͡°) It's UDP!!\n");
+		/*printf("( ͡° ͜ʖ ͡°) It's UDP!!\n");*/
 		process_udp();
 	}
 	else
@@ -85,7 +89,7 @@ sniffer(void)
 		u_int16_t ether_type = ntohs(eth_header->ether_type);
 		if (ether_type == 0x0800)
 		{
-			printf("┬┴┬┴┤ ͜ʖ ͡°) Got a sassy IP packet\n");
+			/*printf("┬┴┬┴┤ ͜ʖ ͡°) Got a sassy IP packet\n");*/
 			process_ip();
 		}
 	}

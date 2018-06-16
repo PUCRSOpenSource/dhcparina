@@ -1,5 +1,7 @@
 #pragma once
 
+#include <net/if.h>
+
 #define BUFFSIZE 1518
 #define ETH_TYPE_INDEX 12
 #define ARP_TYPE_INDEX 21
@@ -21,9 +23,12 @@ struct tcphdr* tcp_header;
 struct udphdr* udp_header;
 struct dhcp_packet* dhcp_header;
 
-extern unsigned char buffer[BUFFSIZE];
-extern int sockd;
-extern int on;
-extern struct ifreq ifr;
+char* ip_str;
+struct ifreq mac_address;
+
+unsigned char send_buffer[BUFFSIZE];
+int sockd;
+int on;
+struct ifreq ifr;
 
 void send_dhcp(unsigned char type);
