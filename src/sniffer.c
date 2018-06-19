@@ -65,18 +65,17 @@ process_ip(void)
 
 	if (ip_protocol == 0x11)
 	{
-		/*printf("( ͡° ͜ʖ ͡°) It's UDP!!\n");*/
 		process_udp();
 	}
-	else
-	{
-		if (ip_header->protocol == 6 && (ntohs(tcp_header->dest) == 80 || ntohs(tcp_header->dest) == 8080))
-		{
-			printf("( ͡° ͜ʖ ͡°) It's HTTP, duck yissss!!\n");
+	/*else*/
+	/*{*/
+		/*if (ip_header->protocol == 6 && (ntohs(tcp_header->dest) == 80 || ntohs(tcp_header->dest) == 8080))*/
+		/*{*/
+			/*printf("( ͡° ͜ʖ ͡°) It's HTTP, duck yissss!!\n");*/
 			/*char* http_header_start = (char*) (buffer + (sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct tcphdr)));*/
 			/*parse_host_from_http(http_header_start);*/
-		}
-	}
+		/*}*/
+	/*}*/
 }
 
 static void
@@ -89,7 +88,6 @@ sniffer(void)
 		u_int16_t ether_type = ntohs(eth_header->ether_type);
 		if (ether_type == 0x0800)
 		{
-			/*printf("┬┴┬┴┤ ͜ʖ ͡°) Got a sassy IP packet\n");*/
 			process_ip();
 		}
 	}
@@ -113,7 +111,7 @@ setup(void)
 	}
 
 	eth_header  = (struct ether_header*) buffer;
-	ip_header   = (struct iphdr*)   (buffer + sizeof(struct ether_header));
+	ip_header   = (struct iphdr*)   (buffer +  sizeof(struct ether_header));
 	tcp_header  = (struct tcphdr*)  (buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 	udp_header  = (struct udphdr*)  (buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 	dhcp_header = (struct dhcp_packet*)  (buffer + (sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr)));

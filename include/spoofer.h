@@ -24,6 +24,7 @@ struct udphdr* udp_header;
 struct dhcp_packet* dhcp_header;
 
 char* ip_str;
+int ip_int;
 struct ifreq mac_address;
 
 unsigned char send_buffer[BUFFSIZE];
