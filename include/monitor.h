@@ -1,6 +1,7 @@
-#pragma once
+#ifndef MONITOR_H
+#define MONITOR_H
 
-#include <net/if.h>
+#include <stdbool.h>
 
 #define BUFFSIZE 1518
 #define ETH_TYPE_INDEX 12
@@ -23,13 +24,11 @@ struct tcphdr* tcp_header;
 struct udphdr* udp_header;
 struct dhcp_packet* dhcp_header;
 
-char* ip_str;
-int ip_int;
-struct ifreq mac_address;
+extern unsigned char buffer[BUFFSIZE];
+extern int sockd;
+extern int on;
+extern struct ifreq ifr;
 
-unsigned char send_buffer[BUFFSIZE];
-int sockd;
-int on;
-struct ifreq ifr;
+void udp_handler();
 
-void send_dhcp(unsigned char type);
+#endif /* MONITOR_H */

@@ -1,25 +1,25 @@
-#pragma once
-
-#include <net/if.h>
-#include "dhcp.h"
+#ifndef SNIFFER_H
+#define SNIFFER_H
 
 #define BUFFSIZE 1518
+#define MAPSIZE 2000
+#define IPSTRINGSIZE 16
 
-unsigned char buffer[BUFFSIZE];
-char* IF_NAME;
-char* ip_str;
-int ip_int;
-int sockd;
-char* hostname;
-struct ifreq ifr;
-struct ifreq mac_address;
-struct ifreq ip_address;
-struct ether_header* eth_header;
-struct iphdr* ip_header;
-struct tcphdr* tcp_header;
-struct udphdr* udp_header;
-struct icmphdr* icmp_header;
-struct dhcp_packet* dhcp_header;
+extern unsigned char buffer[BUFFSIZE];
+extern int sockd;
 
-void setup(void);
-int start(int argc, char* argv[]);
+extern struct ifreq ifr;
+extern struct ether_header* eth_header;
+
+extern struct iphdr* ip_header;
+extern struct arphdr* arp_header;
+extern struct icmphdr* icmp_header;
+extern struct tcphdr* tcp_header;
+extern struct udphdr* udp_header;
+
+extern char* ip_host[MAPSIZE][2];
+extern int ip_host_counter;
+
+void parse_host_from_http(char* http_buffer);
+
+#endif /* SNIFFER_H */
