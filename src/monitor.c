@@ -211,20 +211,6 @@ void send_dhcp(unsigned char type)
 	memcpy (to.sll_addr, addr, 6);
 	len = sizeof(struct sockaddr_ll);
 
-	/*if (first)*/
-	/*{*/
-		/*FILE* f = fopen("first", "w");*/
-		/*fwrite(send_buffer, BUFFSIZE, 1, f);*/
-		/*fclose(f);*/
-		/*second = 1;*/
-	/*}*/
-	/*if (second)*/
-	/*{*/
-		/*FILE* f = fopen("second", "w");*/
-		/*fwrite(send_buffer, BUFFSIZE, 1, f);*/
-		/*fclose(f);*/
-		/*second = 0;*/
-	/*}*/
 	sendto(sock, (char *) send_buffer, sizeof(send_buffer), 0, (struct sockaddr*) &to, len);
 	close(sock);
 }
