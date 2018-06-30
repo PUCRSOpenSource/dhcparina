@@ -1,6 +1,7 @@
-#include "bensocket.h"
+#include <stdio.h>
 
 int main(int argc, char* argv[])
 {
-	start(argc, argv);
+	printf("Oh noes\n");
+	return 0;
 }
