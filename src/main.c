@@ -23,8 +23,6 @@
 #define ETHER_TYPE_IPv4 0x0800
 #define ETHER_TYPE_IPv6 0x86DD
 
-#define DEBUG 1
-
 unsigned char buff[BUFFSIZE];
 
 int sockd;
@@ -76,7 +74,8 @@ print_packet(struct ether_header* eh, struct ip* iphdr, struct tcphdr* th)
 void
 setup(char* argv[])
 {
-	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0) {
+	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
+	{
 		printf("Erro na criacao do socket.\n");
 		exit(1);
 	}
@@ -84,7 +83,9 @@ setup(char* argv[])
 	// Set interface to promiscuous mode
 	strcpy(ifr.ifr_name, argv[1]);
 	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
-		printf("erro no ioctl!");
+	{
+		printf("error in ioctl!");
+	}
 	ioctl(sockd, SIOCGIFFLAGS, &ifr);
 	ifr.ifr_flags |= IFF_PROMISC;
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
@@ -93,7 +94,8 @@ setup(char* argv[])
 int
 sniff(void)
 {
-	while (1) {
+	while (1)
+	{
 		memset(buff, 0, BUFFSIZE);
 		recv(sockd,(char *) &buff, sizeof(buff), 0x0);
 
@@ -115,7 +117,6 @@ sniff(void)
 			}
 		}
 	}
-	return 0;
 }
 
 int
