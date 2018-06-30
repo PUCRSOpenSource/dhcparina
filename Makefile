@@ -6,7 +6,7 @@ ODIR = ./obj
 CC = gcc
 CFLAGS = -I$(IDIR) -g -Wall -Wpedantic -pthread
 
-_DEPS =
+_DEPS = dhcp.h
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 

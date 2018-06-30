@@ -17,6 +17,8 @@
 
 #include <netinet/in_systm.h> //tipos de dados
 
+#include "dhcp.h"
+
 #define BUFFSIZE 1518
 
 /* Ethernet frame types */
