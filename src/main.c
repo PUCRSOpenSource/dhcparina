@@ -99,7 +99,7 @@ sniff(void)
 	while (1)
 	{
 		memset(buff, 0, BUFFSIZE);
-		recv(sockd,(char *) &buff, sizeof(buff), 0x0);
+		recv(sockd, (char*) &buff, sizeof(buff), 0x0);
 
 		struct ether_header* eh = (struct ether_header*) buff;
 		uint16_t ethernet_type = ntohs(eh->ether_type);
@@ -114,7 +114,7 @@ sniff(void)
 				unsigned int port_dest = (unsigned int) ntohs(udp_header->dest);
 				if (port_dest == 67)
 				{
-					fprintf(stderr, "UDP\n");
+					fprintf(stderr, "DHCP\n");
 				}
 			}
 		}
