@@ -23,13 +23,26 @@
 
 /* Ethernet frame types */
 #define ETHER_TYPE_IPv4 0x0800
-#define ETHER_TYPE_IPv6 0x86DD
 
-unsigned char buff[BUFFSIZE];
+unsigned char read_buffer[BUFFSIZE];
+unsigned char write_buffer[BUFFSIZE];
 
 int sockd;
-int on;
 struct ifreq ifr;
+struct ifreq mac_address;
+struct ifreq ip_address;
+unsigned int ip_int;
+char* ip_str;
+
+// Headers for accessing the read_buffer
+struct ether_header* r_eh;
+struct ip* r_iphdr;
+struct udphdr* r_udp_header;
+
+// Headers for accessing the write_buffer
+struct ether_header* w_eh;
+struct ip* w_iphdr;
+struct udphdr* w_udp_header;
 
 void
 print_packet(struct ether_header* eh, struct ip* iphdr, struct tcphdr* th)
@@ -78,7 +91,7 @@ setup(char* argv[])
 {
 	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
 	{
-		printf("Erro na criacao do socket.\n");
+		printf("Error when creating socket\n");
 		exit(1);
 	}
 
@@ -91,6 +104,29 @@ setup(char* argv[])
 	ioctl(sockd, SIOCGIFFLAGS, &ifr);
 	ifr.ifr_flags |= IFF_PROMISC;
 	ioctl(sockd, SIOCSIFFLAGS, &ifr);
+
+	//Read mac address
+	memset(&mac_address, 0x00, sizeof(mac_address));
+	strcpy(mac_address.ifr_name, argv[1]);
+	ioctl(sockd, SIOCGIFHWADDR, &mac_address);
+
+	//Read and convert our IP to int and char[]
+	strcpy(ip_address.ifr_name, argv[1]);
+	ioctl(sockd, SIOCGIFADDR, &ip_address);
+	struct in_addr aux_for_getting_ip =  ((struct sockaddr_in*) &ip_address.ifr_addr)->sin_addr;
+	uint32_t aux_for_getting_ip_2 = aux_for_getting_ip.s_addr;
+	ip_int = htonl(aux_for_getting_ip_2);
+	ip_str = inet_ntoa(((struct sockaddr_in*) &ip_address.ifr_addr)->sin_addr);
+
+	//Setup access pointers for read_buffer
+	r_eh = (struct ether_header*) read_buffer;
+	r_iphdr = (struct ip*) (read_buffer + sizeof(struct ether_header));
+	r_udp_header = (struct udphdr*) (read_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
+
+	//Setup access pointers for write_buffer
+	w_eh = (struct ether_header*) write_buffer;
+	w_iphdr = (struct ip*) (write_buffer + sizeof(struct ether_header));
+	w_udp_header = (struct udphdr*) (write_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 }
 
 int
@@ -98,35 +134,48 @@ sniff(void)
 {
 	while (1)
 	{
-		memset(buff, 0, BUFFSIZE);
-		recv(sockd, (char*) &buff, sizeof(buff), 0x0);
+		memset(read_buffer, 0, BUFFSIZE);
+		recv(sockd, (char*) &read_buffer, sizeof(read_buffer), 0x0);
 
-		struct ether_header* eh = (struct ether_header*) buff;
-		uint16_t ethernet_type = ntohs(eh->ether_type);
+		uint16_t ethernet_type = ntohs(r_eh->ether_type);
 
 		if (ethernet_type == ETHER_TYPE_IPv4)
 		{
-			struct ip* iphdr = (struct ip*) (buff + sizeof(struct ether_header));
-
-			if (iphdr->ip_p == 17) // Check if it's UDP protocol
+			if (r_iphdr->ip_p == 17) // Check if it's UDP protocol
 			{
-				struct udphdr* udp_header = (struct udphdr*) (buff + (sizeof(struct ether_header) + sizeof(struct iphdr)));
-				unsigned int port_dest = (unsigned int) ntohs(udp_header->dest);
+				unsigned int port_dest = (unsigned int) ntohs(r_udp_header->dest);
 				if (port_dest == 67)
 				{
-					fprintf(stderr, "DHCP\n");
+					fprintf(stderr, "Read a DHCP discover or request.\n");
+					return 0;
 				}
 			}
 		}
 	}
+	return 1;
+}
+
+int
+send_dhcp_discover(void)
+{
+	fprintf(stderr, "Gonna build a DHCP offer!\n");
+	memset(write_buffer, 0, BUFFSIZE);
+
+	w_eh->ether_type = htons(ETHER_TYPE_IPv4);
+	for (int i = 0; i < 6; i++)
+	{
+		w_eh->ether_shost[i] = mac_address.ifr_hwaddr.sa_data[i];
+		w_eh->ether_dhost[i] = r_eh->ether_shost[i];
+	}
+	return 0;
 }
 
 int
 main(int argc, char* argv[])
 {
-
 	setup(argv);
 	sniff();
+	send_dhcp_discover();
 
 	return 0;
 }
