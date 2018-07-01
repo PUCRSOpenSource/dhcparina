@@ -7,17 +7,16 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <netinet/ip.h>
-
-#include <net/if.h>  //estrutura ifr
-#include <netinet/ether.h> //header ethernet
-#include <netinet/in.h> //definicao de protocolos
-#include <arpa/inet.h> //funcoes para manipulacao de enderecos IP
+#include <net/if.h>  //ifr structure
+#include <netinet/ether.h> //ethernet header
+#include <netinet/in.h> //protocols definitions
+#include <arpa/inet.h> //functions to work with IP addresses
 #include <linux/tcp.h>
 #include <linux/udp.h>
-
-#include <netinet/in_systm.h> //tipos de dados
+#include <netinet/in_systm.h> //data types
 
 #include "dhcp.h"
+#include "checksum.h"
 
 #define BUFFSIZE 1518
 
@@ -135,7 +134,7 @@ send_dhcp_discover(char* dst_addr)
 	w_iphdr->protocol = IPPROTO_UDP;
 	w_iphdr->saddr = inet_addr(ip_str);
 	w_iphdr->daddr = inet_addr(dst_addr);
-	/*w_iphdr->check = in_cksum((unsigned short *)header, sizeof(struct iphdr));*/
+	w_iphdr->check = in_cksum((unsigned short*) w_iphdr, sizeof(struct iphdr));
 
 	return 0;
 }
