@@ -181,7 +181,8 @@ build_dhcp_offer(char* dst_addr)
 	w_dhcp_header->ciaddr = r_dhcp_header->ciaddr;
 	inet_aton(dst_addr, &w_dhcp_header->yiaddr);
 	w_dhcp_header->siaddr = r_dhcp_header->siaddr;
-	w_dhcp_header->giaddr = r_dhcp_header->giaddr;
+	/*w_dhcp_header->giaddr = r_dhcp_header->giaddr;*/
+	inet_aton(ip_str, &w_dhcp_header->giaddr);
 	for (int i = 0; i < 6; i++)
 	{
 		w_dhcp_header->chaddr[i] = r_eh->ether_shost[i];
