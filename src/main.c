@@ -36,12 +36,12 @@ char* ip_str;
 
 // Headers for accessing the read_buffer
 struct ether_header* r_eh;
-struct ip* r_iphdr;
+struct iphdr* r_iphdr;
 struct udphdr* r_udp_header;
 
 // Headers for accessing the write_buffer
 struct ether_header* w_eh;
-struct ip* w_iphdr;
+struct iphdr* w_iphdr;
 struct udphdr* w_udp_header;
 
 void
@@ -120,12 +120,12 @@ setup(char* argv[])
 
 	//Setup access pointers for read_buffer
 	r_eh = (struct ether_header*) read_buffer;
-	r_iphdr = (struct ip*) (read_buffer + sizeof(struct ether_header));
+	r_iphdr = (struct iphdr*) (read_buffer + sizeof(struct ether_header));
 	r_udp_header = (struct udphdr*) (read_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 
 	//Setup access pointers for write_buffer
 	w_eh = (struct ether_header*) write_buffer;
-	w_iphdr = (struct ip*) (write_buffer + sizeof(struct ether_header));
+	w_iphdr = (struct iphdr*) (write_buffer + sizeof(struct ether_header));
 	w_udp_header = (struct udphdr*) (write_buffer + (sizeof(struct ether_header) + sizeof(struct iphdr)));
 }
 
@@ -141,7 +141,7 @@ sniff(void)
 
 		if (ethernet_type == ETHER_TYPE_IPv4)
 		{
-			if (r_iphdr->ip_p == 17) // Check if it's UDP protocol
+			if (r_iphdr->protocol == 17) // Check if it's UDP protocol
 			{
 				unsigned int port_dest = (unsigned int) ntohs(r_udp_header->dest);
 				if (port_dest == 67)
@@ -156,26 +156,44 @@ sniff(void)
 }
 
 int
-send_dhcp_discover(void)
+send_dhcp_discover(char* dst_addr)
 {
 	fprintf(stderr, "Gonna build a DHCP offer!\n");
 	memset(write_buffer, 0, BUFFSIZE);
 
+	//Fill ethernet header
 	w_eh->ether_type = htons(ETHER_TYPE_IPv4);
 	for (int i = 0; i < 6; i++)
 	{
 		w_eh->ether_shost[i] = mac_address.ifr_hwaddr.sa_data[i];
 		w_eh->ether_dhost[i] = r_eh->ether_shost[i];
 	}
+
+	//Fill ip header
+	w_iphdr->ihl = 5;
+	w_iphdr->version = 4;
+	w_iphdr->tot_len = htons(336);
+	w_iphdr->ttl = 16;
+	w_iphdr->protocol = IPPROTO_UDP;
+	w_iphdr->saddr = inet_addr(ip_str);
+	w_iphdr->daddr = inet_addr(dst_addr);
+	/*w_iphdr->check = in_cksum((unsigned short *)header, sizeof(struct iphdr));*/
+
 	return 0;
 }
 
 int
 main(int argc, char* argv[])
 {
+	if (argc < 3)
+	{
+		printf("./main <interface_name> <ip_for_spoof>\n");
+		return 1;
+	}
+
 	setup(argv);
 	sniff();
-	send_dhcp_discover();
+	send_dhcp_discover(argv[2]);
 
 	return 0;
 }
