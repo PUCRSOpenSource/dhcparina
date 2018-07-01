@@ -271,7 +271,7 @@ send_write_buffer(void)
 	close(send_sockfd);
 	return 0;
 }
-	
+
 int
 build_dhcp_ack(char* dst_addr)
 {
