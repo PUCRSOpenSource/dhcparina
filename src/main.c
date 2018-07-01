@@ -19,9 +19,9 @@
 #include "checksum.h"
 
 #define BUFFSIZE 1518
-
-/* Ethernet frame types */
 #define ETHER_TYPE_IPv4 0x0800
+
+#define DEBUG 1
 
 unsigned char read_buffer[BUFFSIZE];
 unsigned char write_buffer[BUFFSIZE];
@@ -135,6 +135,19 @@ send_dhcp_discover(char* dst_addr)
 	w_iphdr->saddr = inet_addr(ip_str);
 	w_iphdr->daddr = inet_addr(dst_addr);
 	w_iphdr->check = in_cksum((unsigned short*) w_iphdr, sizeof(struct iphdr));
+
+	//Fill udp header
+	w_udp_header->source = htons(67);
+	w_udp_header->dest = htons(68);
+	w_udp_header->len = htons(0x13c);
+	w_udp_header->check = htons(0);
+
+#ifdef DEBUG
+	FILE* f = fopen("write_buffer", "w");
+	fwrite(write_buffer, sizeof(unsigned char) * BUFFSIZE, 1, f);
+	fclose(f);
+	system("od -Ax -tx1 -v write_buffer > wireshark");
+#endif
 
 	return 0;
 }
