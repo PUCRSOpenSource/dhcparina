@@ -118,7 +118,7 @@ sniff(void)
 }
 
 int
-send_dhcp_discover(char* dst_addr)
+send_dhcp_offer(char* dst_addr)
 {
 	fprintf(stderr, "Gonna build a DHCP offer!\n");
 	memset(write_buffer, 0, BUFFSIZE);
@@ -238,7 +238,7 @@ main(int argc, char* argv[])
 
 	setup(argv);
 	sniff();
-	send_dhcp_discover(argv[2]);
+	send_dhcp_offer(argv[2]);
 
 	return 0;
 }
