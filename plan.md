@@ -1,9 +1,10 @@
 # Plan of attack
 
-## Sniffer
+## Part I
 
-Sniff the network and detect DHCP Discover and Request packets.
+  - [X] - Configure socket to listen to incoming packets
+  - [X] - Identify DHCP discover packet
+  - [ ] - Build and send DHCP offer
+  - [ ] - Listen for DHCP request
+  - [ ] - Build and send DHCP ack
 
-## Spoofer
-
-Send DHCP Offer and DHCP Ack when requested.
