@@ -1,0 +1,15 @@
+$TTL    86400
+
+@ IN SOA voyager.amazon.com. admin.amazon.com. (
+		  5          ; Serial number
+		  3h         ; Refresh after 3 hours
+		  1h         ; Retry after 1 hour
+		  1w         ; Expire after 1 week
+		  1h )       ; Negative Cache TTL of 1 hour
+
+; Name servers
+140.54.201 IN NS voyager.amazon.com.
+
+; IP addresses to name
+10.140.54.201.in-addr.arpa. IN PTR amazon.com.
+10.140.54.201.in-addr.arpa. IN PTR voyager.amazon.com.
