@@ -45,48 +45,6 @@ struct iphdr* w_iphdr;
 struct udphdr* w_udp_header;
 
 void
-print_packet(struct ether_header* eh, struct ip* iphdr, struct tcphdr* th)
-{
-	fprintf(stderr, "----------------------------------------------\n");
-	fprintf(stderr, "               ETHERNET\n");
-	fprintf(stderr, "Destination Address: %x:%x:%x:%x:%x:%x\n", eh->ether_dhost[0],eh->ether_dhost[1],eh->ether_dhost[2],eh->ether_dhost[3],eh->ether_dhost[4],eh->ether_dhost[5]);
-	fprintf(stderr, "     Source Address: %x:%x:%x:%x:%x:%x\n", eh->ether_shost[0],eh->ether_shost[1],eh->ether_shost[2],eh->ether_shost[3],eh->ether_shost[4],eh->ether_shost[5]);
-	fprintf(stderr, "               Type: %" PRIu16 "\n\n", ntohs(eh->ether_type));
-	fprintf(stderr, "                 IPV4\n");
-	fprintf(stderr, "      Header length: %x\n", iphdr->ip_hl);
-	fprintf(stderr, "            Version: %x\n", iphdr->ip_v);
-	fprintf(stderr, "    Type of service: %x\n", iphdr->ip_tos);
-	fprintf(stderr, "       Total length: %x\n", iphdr->ip_len);
-	fprintf(stderr, "     Identification: %x\n", iphdr->ip_id);
-	fprintf(stderr, "    Fragment offset: %x\n", iphdr->ip_off);
-	fprintf(stderr, "       Time to live: %x\n", iphdr->ip_ttl);
-	fprintf(stderr, "           Protocol: %x\n", iphdr->ip_p);
-	fprintf(stderr, "           Checksum: %x\n", iphdr->ip_sum);
-	fprintf(stderr, "          IP Source: %s\n", inet_ntoa(iphdr->ip_src));
-	fprintf(stderr, "     IP Destination: %s\n\n", inet_ntoa(iphdr->ip_dst));
-	fprintf(stderr, "                  TCP\n");
-	fprintf(stderr, "             Source: %d\n", ntohs(th->source));
-	fprintf(stderr, "               Dest: %d\n", ntohs(th->dest));
-	fprintf(stderr, "                Seq: %x\n", ntohs(th->seq));
-	fprintf(stderr, "            Ack Seq: %x\n", ntohs(th->ack_seq));
-	fprintf(stderr, "        Data Offset: %x\n", ntohs(th->doff));
-	fprintf(stderr, "           Reserved: %x\n", ntohs(th->res1));
-	fprintf(stderr, "                cwr: %x\n", ntohs(th->cwr));
-	fprintf(stderr, "                ece: %x\n", ntohs(th->ece));
-	fprintf(stderr, "                urg: %x\n", ntohs(th->urg));
-	fprintf(stderr, "                ack: %x\n", ntohs(th->ack));
-	fprintf(stderr, "                psh: %x\n", ntohs(th->psh));
-	fprintf(stderr, "                rst: %x\n", ntohs(th->rst));
-	fprintf(stderr, "                syn: %x\n", ntohs(th->syn));
-	fprintf(stderr, "                fin: %x\n", ntohs(th->fin));
-	fprintf(stderr, "             Window: %x\n", ntohs(th->window));
-	fprintf(stderr, "              Check: %x\n", ntohs(th->check));
-	fprintf(stderr, "     Urgent Pointer: %x\n", ntohs(th->urg_ptr));
-	fprintf(stderr, "----------------------------------------------\n");
-	fprintf(stderr, "\n");
-}
-
-void
 setup(char* argv[])
 {
 	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
