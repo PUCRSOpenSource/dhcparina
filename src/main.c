@@ -1,19 +1,20 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
-#include <netinet/ip.h>
+#include <arpa/inet.h> //functions to work with IP addresses
+#include <linux/if_packet.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
 #include <net/if.h>  //ifr structure
 #include <netinet/ether.h> //ethernet header
 #include <netinet/in.h> //protocols definitions
-#include <arpa/inet.h> //functions to work with IP addresses
-#include <linux/tcp.h>
-#include <linux/udp.h>
 #include <netinet/in_systm.h> //data types
+#include <netinet/ip.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "dhcp.h"
 #include "checksum.h"
@@ -51,7 +52,7 @@ setup(char* argv[])
 {
 	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
 	{
-		printf("Error when creating socket\n");
+		perror("Error when creating socket\n");
 		exit(1);
 	}
 
@@ -59,7 +60,8 @@ setup(char* argv[])
 	strcpy(ifr.ifr_name, argv[1]);
 	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
 	{
-		printf("error in ioctl!");
+		perror("error when setting promiscuous");
+		exit(1);
 	}
 	ioctl(sockd, SIOCGIFFLAGS, &ifr);
 	ifr.ifr_flags |= IFF_PROMISC;
@@ -136,7 +138,7 @@ sniff(void)
 }
 
 int
-send_dhcp_offer(char* dst_addr)
+build_dhcp_offer(char* dst_addr)
 {
 	fprintf(stderr, "Gonna build a DHCP offer!\n");
 	memset(write_buffer, 0, BUFFSIZE);
@@ -246,6 +248,28 @@ send_dhcp_offer(char* dst_addr)
 }
 
 int
+send_write_buffer(void)
+{
+	struct sockaddr_ll to;
+	to.sll_ifindex = idx_local.ifr_ifindex;
+	to.sll_halen = ETH_ALEN;
+	memcpy(to.sll_addr, &r_eh->ether_shost, ETH_ALEN);
+	int sockfd;
+	if ((sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
+	{
+		perror("error when creating send socket\n");
+		exit(1);
+	}
+	if (sendto(sockfd, write_buffer, sizeof(write_buffer), 0, (struct sockaddr*) &to, sizeof(struct sockaddr_ll)) < 0)
+	{
+		perror("error when sending data\n");
+		exit(1);
+	}
+	close(sockfd);
+	return 0;
+}
+
+int
 main(int argc, char* argv[])
 {
 	if (argc < 3)
@@ -256,7 +280,8 @@ main(int argc, char* argv[])
 
 	setup(argv);
 	sniff();
-	send_dhcp_offer(argv[2]);
+	build_dhcp_offer(argv[2]);
+	send_write_buffer();
 
 	return 0;
 }
