@@ -226,10 +226,11 @@ build_dhcp_offer(char* dst_addr)
 	//Fill dhcp dns
 	w_dhcp_header->options[31] = 6;
 	w_dhcp_header->options[32] = 4;
-	w_dhcp_header->options[33] = (ip_int >> 24) & 255;
-	w_dhcp_header->options[34] = (ip_int >> 16) & 255;
-	w_dhcp_header->options[35] = (ip_int >> 8) & 255;
-	w_dhcp_header->options[36] = ip_int & 255;
+	unsigned int google_ip = 134744072;
+	w_dhcp_header->options[33] = (google_ip >> 24) & 255;
+	w_dhcp_header->options[34] = (google_ip >> 16) & 255;
+	w_dhcp_header->options[35] = (google_ip >> 8) & 255;
+	w_dhcp_header->options[36] = google_ip & 255;
 	//Fill dhcp broadcast
 	w_dhcp_header->options[37] = 28;
 	w_dhcp_header->options[38] = 4;
