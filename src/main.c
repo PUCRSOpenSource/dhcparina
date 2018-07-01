@@ -30,6 +30,7 @@ int sockd;
 struct ifreq ifr;
 struct ifreq mac_address;
 struct ifreq ip_address;
+struct ifreq idx_local;
 unsigned int ip_int;
 char* ip_str;
 
@@ -67,15 +68,32 @@ setup(char* argv[])
 	//Read mac address
 	memset(&mac_address, 0x00, sizeof(mac_address));
 	strcpy(mac_address.ifr_name, argv[1]);
-	ioctl(sockd, SIOCGIFHWADDR, &mac_address);
+	if (ioctl(sockd, SIOCGIFHWADDR, &mac_address) < 0)
+	{
+		perror("SIOCGHWADDR\n");
+		exit(1);
+	}
 
 	//Read and convert our IP to int and char[]
 	strcpy(ip_address.ifr_name, argv[1]);
-	ioctl(sockd, SIOCGIFADDR, &ip_address);
+	if (ioctl(sockd, SIOCGIFADDR, &ip_address) < 0)
+	{
+		perror("SIOCGIFADDR\n");
+		exit(1);
+	}
 	struct in_addr aux_for_getting_ip =  ((struct sockaddr_in*) &ip_address.ifr_addr)->sin_addr;
 	uint32_t aux_for_getting_ip_2 = aux_for_getting_ip.s_addr;
 	ip_int = htonl(aux_for_getting_ip_2);
 	ip_str = inet_ntoa(((struct sockaddr_in*) &ip_address.ifr_addr)->sin_addr);
+
+	//Read interface index
+	memset(&idx_local, 0, sizeof(struct ifreq));
+	strcpy(idx_local.ifr_name, argv[1]);
+	if (ioctl(sockd, SIOCGIFINDEX, &idx_local) < 0)
+	{
+		perror("SIOCGIFINDEX\n");
+		exit(1);
+	}
 
 	//Setup access pointers for read_buffer
 	r_eh = (struct ether_header*) read_buffer;
