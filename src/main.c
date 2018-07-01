@@ -274,7 +274,7 @@ send_write_buffer(void)
 }
 
 int
-build_dhcp_ack(char* dst_addr)
+build_dhcp_ack(void)
 {
 	fprintf(stderr, "Gonna build a DHCP ack!\n");
 	w_dhcp_header->options[6] = DHCP_ACK;
@@ -301,7 +301,7 @@ main(int argc, char* argv[])
 	sniff();
 	build_dhcp_offer(argv[2]);
 	send_write_buffer();
-	build_dhcp_ack(argv[2]);
+	build_dhcp_ack();
 	send_write_buffer();
 
 	return 0;
