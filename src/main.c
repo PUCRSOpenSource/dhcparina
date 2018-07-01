@@ -19,15 +19,16 @@
 #include "dhcp.h"
 #include "checksum.h"
 
-#define BUFFSIZE 1518
+#define READ_BUFFSIZE 1518
+#define SEND_BUFFSIZE 1024
 #define ETHER_TYPE_IPv4 0x0800
 
 #define DEBUG 1
 
-unsigned char read_buffer[BUFFSIZE];
-unsigned char write_buffer[BUFFSIZE];
+unsigned char read_buffer[READ_BUFFSIZE];
+unsigned char write_buffer[SEND_BUFFSIZE];
 
-int sockd;
+int read_sockfd;
 struct ifreq ifr;
 struct ifreq mac_address;
 struct ifreq ip_address;
@@ -50,7 +51,7 @@ struct dhcp_packet* w_dhcp_header;
 void
 setup(char* argv[])
 {
-	if ((sockd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
+	if ((read_sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
 	{
 		perror("Error when creating socket\n");
 		exit(1);
@@ -58,19 +59,19 @@ setup(char* argv[])
 
 	// Set interface to promiscuous mode
 	strcpy(ifr.ifr_name, argv[1]);
-	if (ioctl(sockd, SIOCGIFINDEX, &ifr) < 0)
+	if (ioctl(read_sockfd, SIOCGIFINDEX, &ifr) < 0)
 	{
 		perror("error when setting promiscuous");
 		exit(1);
 	}
-	ioctl(sockd, SIOCGIFFLAGS, &ifr);
+	ioctl(read_sockfd, SIOCGIFFLAGS, &ifr);
 	ifr.ifr_flags |= IFF_PROMISC;
-	ioctl(sockd, SIOCSIFFLAGS, &ifr);
+	ioctl(read_sockfd, SIOCSIFFLAGS, &ifr);
 
 	//Read mac address
 	memset(&mac_address, 0x00, sizeof(mac_address));
 	strcpy(mac_address.ifr_name, argv[1]);
-	if (ioctl(sockd, SIOCGIFHWADDR, &mac_address) < 0)
+	if (ioctl(read_sockfd, SIOCGIFHWADDR, &mac_address) < 0)
 	{
 		perror("SIOCGHWADDR\n");
 		exit(1);
@@ -78,7 +79,7 @@ setup(char* argv[])
 
 	//Read and convert our IP to int and char[]
 	strcpy(ip_address.ifr_name, argv[1]);
-	if (ioctl(sockd, SIOCGIFADDR, &ip_address) < 0)
+	if (ioctl(read_sockfd, SIOCGIFADDR, &ip_address) < 0)
 	{
 		perror("SIOCGIFADDR\n");
 		exit(1);
@@ -91,7 +92,7 @@ setup(char* argv[])
 	//Read interface index
 	memset(&idx_local, 0, sizeof(struct ifreq));
 	strcpy(idx_local.ifr_name, argv[1]);
-	if (ioctl(sockd, SIOCGIFINDEX, &idx_local) < 0)
+	if (ioctl(read_sockfd, SIOCGIFINDEX, &idx_local) < 0)
 	{
 		perror("SIOCGIFINDEX\n");
 		exit(1);
@@ -116,8 +117,8 @@ sniff(void)
 {
 	while (1)
 	{
-		memset(read_buffer, 0, BUFFSIZE);
-		recv(sockd, (char*) &read_buffer, sizeof(read_buffer), 0x0);
+		memset(read_buffer, 0, READ_BUFFSIZE);
+		recv(read_sockfd, (char*) &read_buffer, sizeof(read_buffer), 0x0);
 
 		uint16_t ethernet_type = ntohs(r_eh->ether_type);
 
@@ -141,7 +142,7 @@ int
 build_dhcp_offer(char* dst_addr)
 {
 	fprintf(stderr, "Gonna build a DHCP offer!\n");
-	memset(write_buffer, 0, BUFFSIZE);
+	memset(write_buffer, 0, SEND_BUFFSIZE);
 
 	//Fill ethernet header
 	w_eh->ether_type = htons(ETHER_TYPE_IPv4);
@@ -239,7 +240,7 @@ build_dhcp_offer(char* dst_addr)
 
 #ifdef DEBUG
 	FILE* f = fopen("write_buffer", "w");
-	fwrite(write_buffer, sizeof(unsigned char) * BUFFSIZE, 1, f);
+	fwrite(write_buffer, sizeof(unsigned char) * SEND_BUFFSIZE, 1, f);
 	fclose(f);
 	system("od -Ax -tx1 -v write_buffer > wireshark");
 #endif
@@ -254,18 +255,18 @@ send_write_buffer(void)
 	to.sll_ifindex = idx_local.ifr_ifindex;
 	to.sll_halen = ETH_ALEN;
 	memcpy(to.sll_addr, &r_eh->ether_shost, ETH_ALEN);
-	int sockfd;
-	if ((sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
+	int send_sockfd;
+	if ((send_sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0)
 	{
 		perror("error when creating send socket\n");
 		exit(1);
 	}
-	if (sendto(sockfd, write_buffer, sizeof(write_buffer), 0, (struct sockaddr*) &to, sizeof(struct sockaddr_ll)) < 0)
+	if (sendto(send_sockfd, write_buffer, sizeof(write_buffer) / 2, 0, (struct sockaddr*) &to, sizeof(struct sockaddr_ll)) < 0)
 	{
 		perror("error when sending data\n");
 		exit(1);
 	}
-	close(sockfd);
+	close(send_sockfd);
 	return 0;
 }
 
@@ -274,7 +275,7 @@ main(int argc, char* argv[])
 {
 	if (argc < 3)
 	{
-		printf("./main <interface_name> <ip_for_spoof>\n");
+		perror("./main <interface_name> <ip_for_spoof>\n");
 		return 1;
 	}
 
