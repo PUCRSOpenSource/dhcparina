@@ -25,7 +25,7 @@
 #define DHCP_OFFER 2
 #define DHCP_ACK 5
 
-#define DEBUG 1
+//#define DEBUG 1
 
 unsigned char read_buffer[READ_BUFFSIZE];
 unsigned char write_buffer[SEND_BUFFSIZE];
