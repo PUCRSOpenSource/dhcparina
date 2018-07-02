@@ -301,6 +301,7 @@ main(int argc, char* argv[])
 	sniff();
 	build_dhcp_offer(argv[2]);
 	send_write_buffer();
+	sniff();
 	build_dhcp_ack();
 	send_write_buffer();
 
